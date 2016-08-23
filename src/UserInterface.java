@@ -148,5 +148,11 @@ public class UserInterface {
 	public String informOfInvalid(){
 		return "An invalid move was made during translation mode, forcing a checkmate.";
 	}
+	public int informOfAIMode(){
+		System.out.println("Would you like to play against Artificial Intellegence?");
+		System.out.println("0. No");
+		System.out.println("1. Yes");
+		return getChoice(1);
+	}
 
 }

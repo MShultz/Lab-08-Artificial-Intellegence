@@ -7,25 +7,26 @@ public class Node {
 	Board board;
 	private int depth;
 	private boolean isLeaf;
+	private boolean isRoot;
 	private int value;
 	private HashSet<Node> children;
 	private boolean isMin;
 	private Move nodeMove;
-	private LinkedList<Node> pathToHead;
+	private LinkedList<Node> pathToHead = new LinkedList<Node>();
 	private Piece[][] currentBoard;
 	private Piece[][] previousBoard;
-	private Move choice;
 
 	public Node(Board board, InteractiveHandler iHandle) {
 		depth = 3;
-		this.currentBoard = board.copyArray(board.getBoard());
+		this.previousBoard = board.copyArray(board.getBoard());
+		this.currentBoard = board.copyArray(previousBoard);
 		this.iHandle = iHandle;
 		this.isLeaf = false;
+		this.isRoot = true;
 		this.board = board;
 		this.isMin = false;
 		this.children = populateChildren();
 		this.pathToHead.add(this);
-		this.choice = setChoice();
 	}
 
 	public Node(Move nodeMove, int depth, boolean parentIsMin, LinkedList<Node> pathToHead, Board board,
@@ -34,10 +35,10 @@ public class Node {
 		this.depth = depth;
 		this.nodeMove = nodeMove;
 		this.isLeaf = (depth == 0);
+		this.isRoot = false;
 		this.isMin = !parentIsMin;
 		this.pathToHead = pathToHead;
 		this.board = board;
-		this.value = getValue();
 		this.previousBoard = board.copyArray(currentBoard);
 		this.currentBoard = board.moveSinglePiece(nodeMove.getCurrentPosition(), nodeMove.getTravelPosition(),
 				board.copyArray(currentBoard), nodeMove.getPiece());
@@ -67,13 +68,13 @@ public class Node {
 		return childrenNodes;
 	}
 
-	private int getValue(){
+	private int getValue() {
 		int value = 0;
-		if(isLeaf)
+		if (isLeaf)
 			value = getHeuristicValue();
-		else if(isMin){
+		else if (isMin) {
 			value = getMinValue();
-		}else{
+		} else {
 			value = getMaxValue();
 		}
 		return value;
@@ -82,39 +83,44 @@ public class Node {
 	private int getHeuristicValue() {
 		int value = 0;
 		for (Node n : pathToHead) {
-			MoveType type = n.getMove().getType();
-			if (type == MoveType.CAPTURE) {
-				int valueOfPiece = previousBoard[n.getMove().getTravelPosition().getRank()][n.getMove()
-						.getTravelPosition().getFile()].getType().getValue();
-				value = (n.isMin() ? value - valueOfPiece : value + valueOfPiece);
-			} else if (type == MoveType.CHECKMATE) {
-				value = (n.isMin() ? value - 1000 : value + 1000);
+			if (!n.isRoot) {
+				MoveType type = n.getMove().getType();
+				if (type == MoveType.CAPTURE) {
+					int valueOfPiece = previousBoard[n.getMove().getTravelPosition().getRank()][n.getMove()
+							.getTravelPosition().getFile()].getType().getValue();
+					value = (n.isMin() ? value - valueOfPiece : value + valueOfPiece);
+				} else if (type == MoveType.CHECKMATE) {
+					value = (n.isMin() ? value - 1000 : value + 1000);
+				}
 			}
 		}
 		return value;
 	}
-	private int getMinValue(){
+
+	private int getMinValue() {
 		value = 2000;
-		for(Node n: children){
-			if(n.getValue() < value)
+		for (Node n : children) {
+			if (n.getValue() < value)
 				value = n.getValue();
 		}
 		return value;
 	}
-	
-	private int getMaxValue(){
+
+	private int getMaxValue() {
 		value = -2000;
-		for(Node n: children){
-			if(n.getValue() > value)
+		for (Node n : children) {
+			if (n.getValue() > value)
 				value = n.getValue();
 		}
 		return value;
 	}
-	private Move setChoice(){
+
+	public Move getChoice() {
+		this.value = getValue();
 		Move m = null;
 		int value = -2000;
-		for(Node n: children){
-			if(n.getValue() > value){
+		for (Node n : children) {
+			if (n.getValue() > value) {
 				value = n.getValue();
 				m = n.getMove();
 			}

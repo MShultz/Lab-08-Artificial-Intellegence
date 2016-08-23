@@ -10,6 +10,7 @@ public class InteractiveHandler {
 	UserInterface ui;
 	OutputFormatter format;
 	Processor process;
+	boolean quit = false;
 
 	public InteractiveHandler(Board board, LogWriter writer, DirectiveHandler handler, OutputFormatter format,
 			Processor process, UserInterface ui) {
@@ -45,47 +46,73 @@ public class InteractiveHandler {
 	}
 
 	private void interactionMode(boolean beganWithNewBoard, int whiteTurn) {
-		boolean quit = false;
 		if (beganWithNewBoard) {
 			setUpBoard();
 		}
-		board.writeBoard();
-		int count = 1 + whiteTurn;
+		if(ui.informOfAIMode() == 1)
+			aiMode();
+		else
+			pvp(whiteTurn);
+		
+		board.printBoardToConsole();
+	}
+	private void aiMode(){
+		System.out.println("Initializing AI mode.");
+		int count = 1;
 		boolean isWhite = true;
 		while (!quit && board.isPlayable() && !board.isStalemate() && !board.isCheckmate()) {
-			int piece;
-			boolean pieceChosen = true;
 			isWhite = (count % 2 != 0);
-			ArrayList<Piece> pieces = board.getAllPossiblePieces(isWhite);
-			King currentPlayerKing = (King) board.getTeamKing(isWhite, board.getBoard());
-			if (pieces.size() == 0 && !currentPlayerKing.isCheck()) {
-				board.setStalemate(true);
-			} else if (pieces.size() == 0 && currentPlayerKing.isCheck()) {
-				board.setCheckmate(true);
-				board.setWinner(!isWhite);
-			}
-			if (!board.isStalemate() && !board.isCheckmate()) {
-				ui.inform(isWhite);
-				do {
-					board.printBoardToConsole();
-					piece = ui.determinePiece(pieces);
-					quit = isQuit(piece);
-					if (!quit) {
-						ArrayList<Move> possibleMoves = generateMovement(getAllMovesForPiece(pieces, piece, isWhite),
-								pieces.get(piece - 1));
-						board.printBoardToConsole();
-						int move = ui.determineMove(possibleMoves);
-						quit = isQuit(move);
-						pieceChosen = !(move == 1);
-						if (pieceChosen && !quit)
-							getCompleteMovementAndProcess(pieces, piece, possibleMoves, move, isWhite);
-					}
-				} while (!pieceChosen);
+			if(isWhite)
+				playerMove(isWhite);
+			else{
+				Node n = new Node(board, this);
+				process.processMovement(getCompleteMovement(n.getChoice()), false);
 			}
 			++count;
 			board.setPostMoveChecks();
 		}
-		board.printBoardToConsole();
+	}
+	private void pvp(int whiteTurn){
+		int count = 1 + whiteTurn;
+		board.writeBoard();
+		while (!quit && board.isPlayable() && !board.isStalemate() && !board.isCheckmate()) {
+			boolean isWhite = (count % 2 != 0);
+			playerMove(isWhite);
+			++count;
+			board.setPostMoveChecks();
+		}
+	}
+	
+	private void playerMove(boolean isWhite){
+		int piece;
+		boolean pieceChosen = true;
+		
+		ArrayList<Piece> pieces = board.getAllPossiblePieces(isWhite);
+		King currentPlayerKing = (King) board.getTeamKing(isWhite, board.getBoard());
+		if (pieces.size() == 0 && !currentPlayerKing.isCheck()) {
+			board.setStalemate(true);
+		} else if (pieces.size() == 0 && currentPlayerKing.isCheck()) {
+			board.setCheckmate(true);
+			board.setWinner(!isWhite);
+		}
+		if (!board.isStalemate() && !board.isCheckmate()) {
+			ui.inform(isWhite);
+			do {
+				board.printBoardToConsole();
+				piece = ui.determinePiece(pieces);
+				quit = isQuit(piece);
+				if (!quit) {
+					ArrayList<Move> possibleMoves = generateMovement(getAllMovesForPiece(pieces, piece, isWhite),
+							pieces.get(piece - 1));
+					board.printBoardToConsole();
+					int move = ui.determineMove(possibleMoves);
+					quit = isQuit(move);
+					pieceChosen = !(move == 1);
+					if (pieceChosen && !quit)
+						getCompleteMovementAndProcess(pieces, piece, possibleMoves, move, isWhite);
+				}
+			} while (!pieceChosen);
+		}
 	}
 
 	private void getCompleteMovementAndProcess(ArrayList<Piece> pieces, int piece, ArrayList<Move> possibleMoves,
