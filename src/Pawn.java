@@ -34,11 +34,14 @@ public class Pawn extends Piece {
 		ArrayList<Position> movements = new ArrayList<Position>();
 		Position p = this.getCurrentPosition();
 		int multiplier = (this.isWhite() ? 1 : -1);
-		if (board[p.getRank() + (1 * multiplier)][p.getFile()] == null) {
-			movements.add(new Position(p.getRank() + (1 * multiplier), p.getFile()));
-			if (!hasMoved() && board[p.getRank() + (2 * multiplier)][p.getFile()] == null
-					&& (p.getRank() == 1 || p.getRank() == 6)) {
-				movements.add(new Position(p.getRank() + (2 * multiplier), p.getFile()));
+		if (p.getRank() + (1 * multiplier) < 8 && p.getRank() + (1 * multiplier) >= 0 && p.getFile() < 8
+				&& p.getFile() >= 0) {
+			if (board[p.getRank() + (1 * multiplier)][p.getFile()] == null) {
+				movements.add(new Position(p.getRank() + (1 * multiplier), p.getFile()));
+				if (!hasMoved() && board[p.getRank() + (2 * multiplier)][p.getFile()] == null
+						&& (p.getRank() == 1 || p.getRank() == 6)) {
+					movements.add(new Position(p.getRank() + (2 * multiplier), p.getFile()));
+				}
 			}
 		}
 		return movements;

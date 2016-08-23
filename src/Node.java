@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 
@@ -13,13 +14,14 @@ public class Node {
 	private boolean isMin;
 	private Move nodeMove;
 	private LinkedList<Node> pathToHead = new LinkedList<Node>();
-	private Piece[][] currentBoard;
-	private Piece[][] previousBoard;
+	public Piece[][] currentBoard;
+	private int heuristicValue;
+	//private Piece[][] previousBoard;
 
 	public Node(Board board, InteractiveHandler iHandle) {
 		depth = 3;
-		this.previousBoard = board.copyArray(board.getBoard());
-		this.currentBoard = board.copyArray(previousBoard);
+	//	this.previousBoard = board.copyArray(board.getBoard());
+		this.currentBoard = board.copyArray(board.getBoard());
 		this.iHandle = iHandle;
 		this.isLeaf = false;
 		this.isRoot = true;
@@ -39,7 +41,9 @@ public class Node {
 		this.isMin = !parentIsMin;
 		this.pathToHead = pathToHead;
 		this.board = board;
-		this.previousBoard = board.copyArray(currentBoard);
+	//	this.previousBoard = board.copyArray(currentBoard);
+		if(isLeaf)
+		this.heuristicValue = getHeuristicValue();
 		this.currentBoard = board.moveSinglePiece(nodeMove.getCurrentPosition(), nodeMove.getTravelPosition(),
 				board.copyArray(currentBoard), nodeMove.getPiece());
 		if (!isLeaf)
@@ -71,7 +75,7 @@ public class Node {
 	private int getValue() {
 		int value = 0;
 		if (isLeaf)
-			value = getHeuristicValue();
+			value = heuristicValue;
 		else if (isMin) {
 			value = getMinValue();
 		} else {
@@ -86,9 +90,9 @@ public class Node {
 			if (!n.isRoot) {
 				MoveType type = n.getMove().getType();
 				if (type == MoveType.CAPTURE) {
-					int valueOfPiece = previousBoard[n.getMove().getTravelPosition().getRank()][n.getMove()
+					int valueOfPiece = n.currentBoard[n.getMove().getTravelPosition().getRank()][n.getMove()
 							.getTravelPosition().getFile()].getType().getValue();
-					value = (n.isMin() ? value - valueOfPiece : value + valueOfPiece);
+					value = (n.isMin() ? value + valueOfPiece : value - valueOfPiece);
 				} else if (type == MoveType.CHECKMATE) {
 					value = (n.isMin() ? value - 1000 : value + 1000);
 				}
