@@ -65,8 +65,9 @@ public class InteractiveHandler {
 			if(isWhite)
 				playerMove(isWhite);
 			else{
+				board.printBoardToConsole();
 				Node n = new Node(board, this);
-				process.processMovement(getCompleteMovement(n.getChoice()), false);
+				process.processMovement(getCompleteMovement(n.getChoice(), isWhite), false);
 			}
 			++count;
 			board.setPostMoveChecks();
@@ -117,7 +118,7 @@ public class InteractiveHandler {
 
 	private void getCompleteMovementAndProcess(ArrayList<Piece> pieces, int piece, ArrayList<Move> possibleMoves,
 			int move, boolean isWhite) {
-		String movement = getCompleteMovement(possibleMoves.get(move - 2));
+		String movement = getCompleteMovement(possibleMoves.get(move - 2), isWhite);
 		if (movement.contains("O")) {
 			board.castle(isWhite, movement);
 			writer.writeToFile(format.formatCastle(movement, isWhite));
@@ -162,7 +163,7 @@ public class InteractiveHandler {
 		return possibleMoves;
 	}
 
-	private String getCompleteMovement(Move move) {
+	private String getCompleteMovement(Move move, boolean isWhite) {
 		String movement;
 		if (move.getTravelPosition().file == -1)
 			movement = "O-O-O";
@@ -193,6 +194,9 @@ public class InteractiveHandler {
 			}
 			piece.setCurrentPosition(currentPosition);
 		}
+		System.out.println("---------------------------");
+		System.out.println((isWhite? "White's": "Black's") + " Chosen Move: " + movement);
+		System.out.println("---------------------------");
 		return movement;
 	}
 

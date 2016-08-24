@@ -53,4 +53,5 @@ public class Move {
 		opposingKing.setCheck(wasCheck);
 		piece.setCurrentPosition(current);
 	}
+
 }

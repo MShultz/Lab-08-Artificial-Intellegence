@@ -16,19 +16,18 @@ public class Node {
 	private LinkedList<Node> pathToHead = new LinkedList<Node>();
 	public Piece[][] currentBoard;
 	private int heuristicValue;
-	//private Piece[][] previousBoard;
 
 	public Node(Board board, InteractiveHandler iHandle) {
 		depth = 3;
-	//	this.previousBoard = board.copyArray(board.getBoard());
 		this.currentBoard = board.copyArray(board.getBoard());
 		this.iHandle = iHandle;
 		this.isLeaf = false;
 		this.isRoot = true;
 		this.board = board;
 		this.isMin = false;
-		this.children = populateChildren();
 		this.pathToHead.add(this);
+		this.children = populateChildren();
+	
 	}
 
 	public Node(Move nodeMove, int depth, boolean parentIsMin, LinkedList<Node> pathToHead, Board board,
@@ -41,14 +40,13 @@ public class Node {
 		this.isMin = !parentIsMin;
 		this.pathToHead = pathToHead;
 		this.board = board;
-	//	this.previousBoard = board.copyArray(currentBoard);
 		if(isLeaf)
 		this.heuristicValue = getHeuristicValue();
+		this.pathToHead.add(this);
 		this.currentBoard = board.moveSinglePiece(nodeMove.getCurrentPosition(), nodeMove.getTravelPosition(),
 				board.copyArray(currentBoard), nodeMove.getPiece());
 		if (!isLeaf)
 			this.children = populateChildren();
-		this.pathToHead.add(this);
 	}
 
 	public boolean isMin() {
@@ -86,17 +84,21 @@ public class Node {
 
 	private int getHeuristicValue() {
 		int value = 0;
+//		int count = 3;
 		for (Node n : pathToHead) {
 			if (!n.isRoot) {
 				MoveType type = n.getMove().getType();
 				if (type == MoveType.CAPTURE) {
 					int valueOfPiece = n.currentBoard[n.getMove().getTravelPosition().getRank()][n.getMove()
 							.getTravelPosition().getFile()].getType().getValue();
+//				if(count < 3 && count >= 1)
+//					valueOfPiece+=count*2;
 					value = (n.isMin() ? value + valueOfPiece : value - valueOfPiece);
 				} else if (type == MoveType.CHECKMATE) {
-					value = (n.isMin() ? value - 1000 : value + 1000);
+					value = (n.isMin() ? value + 1000 : value - 1000);
 				}
 			}
+//			--count;
 		}
 		return value;
 	}
@@ -120,11 +122,33 @@ public class Node {
 	}
 
 	public Move getChoice() {
-		this.value = getValue();
 		Move m = null;
+		if(immenentCapture()){
+			m = getBestCaptureMove();
+		}else{
+		this.value = getValue();
 		int value = -2000;
 		for (Node n : children) {
 			if (n.getValue() > value) {
+				value = n.getValue();
+				m = n.getMove();
+			}
+		}}
+		return m;
+	}
+	private boolean immenentCapture(){
+		boolean capture = false;
+		for(Node n: children){
+			if(n.getMove().getType() == MoveType.CAPTURE)
+				capture = true;
+		}
+		return capture;
+	}
+	private Move getBestCaptureMove(){
+		Move m =  null;
+		int value = -2000;
+		for(Node n: children){
+			if(n.getMove().getType() == MoveType.CAPTURE && n.getValue() > value){
 				value = n.getValue();
 				m = n.getMove();
 			}
