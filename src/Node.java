@@ -141,7 +141,7 @@ public class Node {
 
 	public Move getChoice() {
 		Move m = null;
-		if (immenentCapture()) {
+		if (immenentCapture() || couldBeCapture(this)) {
 			m = getBestCaptureMove();
 		}
 		if (m == null) {
@@ -149,13 +149,11 @@ public class Node {
 		}
 		if (m == null) {
 			m = getRandomMove();
-			System.out.println("Random");
 		}
 		return m;
 	}
 
 	private Move getRandomMove() {
-		System.out.println("Random");
 		Move m = null;
 		int choice = new Random().nextInt(children.size() - 1);
 		int count = 0;
@@ -165,7 +163,6 @@ public class Node {
 			}
 			++count;
 		}
-		System.out.println("Rank: " + m.getTravelPosition().getRank() + " File: " + m.getTravelPosition().getFile());
 		return m;
 	}
 
@@ -176,8 +173,7 @@ public class Node {
 		for (Node n : children) {
 			if (!n.isLeaf) {
 				int nodeVal = n.getValue();
-				if ((nodeVal > value && !couldBeCapture(n))
-						|| (nodeVal > value && couldBeCapture(n) && betterThanLoss(n))) {
+				if ((nodeVal < value && !couldBeCapture(n)) || (nodeVal > value && couldBeCapture(n))) {
 					if (n.getMove() != null) {
 						value = nodeVal;
 						m = n.getMove();
@@ -185,8 +181,6 @@ public class Node {
 				}
 			}
 		}
-		if (m != null)
-			System.out.println("Best");
 		return m;
 	}
 
@@ -210,30 +204,19 @@ public class Node {
 	}
 
 	private Move getBestCaptureMove() {
+		int pieceValue = 0;
 		Move m = null;
-		int value = -2000;
 		for (Node n : children) {
-			if (n.getMove().getType() == MoveType.CAPTURE && n.getValue() > value) {
-				if (betterThanLoss(n)) {
-					value = n.getValue();
+			if (n.getMove().getType() == MoveType.CAPTURE) {
+				Piece capturePiece = n.previousBoard[n.nodeMove.getTravelPosition().getRank()][n.nodeMove
+						.getTravelPosition().getFile()];
+				if (m == null || (n.nodeMove.getPiece().getType().getValue() <= capturePiece.getType().getValue()
+						&& pieceValue < capturePiece.getType().getValue())) {
+					pieceValue = n.nodeMove.getPiece().getType().getValue();
 					m = n.getMove();
 				}
 			}
 		}
 		return m;
-	}
-
-	private boolean betterThanLoss(Node n) {
-		boolean better = true;
-		Position travel = n.getMove().getTravelPosition();
-		Piece pieceCaptured = n.previousBoard[travel.getRank()][travel.getFile()];
-		int pieceValue = (pieceCaptured == null ? 0 : pieceCaptured.getType().getValue());
-		int parentPieceValue = n.getMove().getPiece().getType().getValue();
-		for (Node childrenN : n.children) {
-			if (childrenN.getMove().getTravelPosition().equals(travel) && parentPieceValue > pieceValue) {
-				better = false;
-			}
-		}
-		return better;
 	}
 }

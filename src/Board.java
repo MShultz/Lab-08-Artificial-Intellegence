@@ -494,13 +494,13 @@ public class Board {
 			}
 		}
 		kingsMoves = getPossibleKingMoves(opposingMoves, kingsMoves);
+		
 		if (isCheckmate && setCheckmate) {
 			setCheckmate(kingsMoves.size() == 0);
 			setWinner(!k.isWhite());
 		}
-		return kingsMoves.size() == 0 && couldCapture;
+		return kingsMoves.size() == 0 && couldCapture && getAllPossiblePieces(isWhite, board).size() != 0;
 	}
-
 	private ArrayList<Position> getPossibleKingMoves(ArrayList<Position> opposingMoves,
 			ArrayList<Position> kingsMoves) {
 		for (Position pos : opposingMoves) {

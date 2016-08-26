@@ -37,20 +37,20 @@ public class InteractiveHandler {
 
 	}
 
-	public void initiateInteractionMode(boolean beganWithNewBoard, int whiteTurn) {
+	public void initiateInteractionMode(boolean beganWithNewBoard, boolean ai,  int whiteTurn) {
 		if (!board.isCheckmate() && !board.isInvalidCheckMove() && !board.isStalemate()) {
 			writer.writeToFile("----------------------------------");
 			writer.writeToFile("Process: Interactive Mode enabled.");
 			writer.writeToFile("----------------------------------");
-			interactionMode(beganWithNewBoard, whiteTurn);
+			interactionMode(beganWithNewBoard, ai, whiteTurn);
 		}
 	}
 
-	private void interactionMode(boolean beganWithNewBoard, int whiteTurn) {
+	private void interactionMode(boolean beganWithNewBoard, boolean ai,  int whiteTurn) {
 		if (beganWithNewBoard) {
 			setUpBoard();
 		}
-		if (ui.informOfAIMode() == 1)
+		if (ai)
 			aiMode();
 		else
 			pvp(whiteTurn);
@@ -67,6 +67,7 @@ public class InteractiveHandler {
 			if (isWhite)
 				playerMove(isWhite);
 			else {
+				board.printBoardToConsole();
 				System.out.println("AI is thinking...");
 				if (!checkState(false)) {
 					Node n = new Node(board, this);

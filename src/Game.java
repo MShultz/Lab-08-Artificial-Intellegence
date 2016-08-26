@@ -26,12 +26,13 @@ public class Game {
 		interactionHandler = new InteractiveHandler(board, writer, handler, format, process, ui);	
 	}
 	public void play(){
-		if (containedFile) {
+		boolean aiMode = ui.informOfAIMode() == 1;
+		if (containedFile && !aiMode) {
 			boolean beginWithInteraction = translationHandler.translateFile(process, fileName);
-			interactionHandler.initiateInteractionMode(beginWithInteraction, translationHandler.turn);
+			interactionHandler.initiateInteractionMode(beginWithInteraction, false, translationHandler.turn);
 		} else {
-			writer.writeToFile("Process: You entered no filepath. The program will now revert to Interaction Mode.");
-			interactionHandler.initiateInteractionMode(true, 0);
+			writer.writeToFile("Process: You entered no filepath or chose AI mode. The program will now revert to Interaction Mode.");
+			interactionHandler.initiateInteractionMode(true, true, 0);
 		}
 		endGame();	
 	}
