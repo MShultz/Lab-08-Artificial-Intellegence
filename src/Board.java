@@ -9,6 +9,7 @@ public class Board {
 	private boolean winner;
 	private boolean invalidCheckMove = false;
 	private boolean stalemateRequired = false;
+	boolean couldCapture = true;
 	LogWriter writer;
 	DirectiveHandler handler;
 
@@ -90,6 +91,10 @@ public class Board {
 			}
 			if (!isInvalidCheckMove()) {
 				move(isWhite, checker, p, placement, position1, position2);
+				if (placement.contains("#")){
+					this.isCheckmate = true;
+					this.winner = isWhite;
+				}
 				sucessfulMove = true;
 			} else {
 				p.setCurrentPosition(originalPosition);
@@ -476,6 +481,7 @@ public class Board {
 	}
 
 	public boolean isCheckmate(boolean isWhite, Piece[][] board, boolean setCheckmate) {
+		couldCapture = false;
 		King k = (King) getTeamKing(isWhite, board);
 		ArrayList<Position> kingsMoves = k.getMovement(board, true);
 		ArrayList<Piece> opposingTeam = getTeam(!isWhite, board);
@@ -492,7 +498,7 @@ public class Board {
 			setCheckmate(kingsMoves.size() == 0);
 			setWinner(!k.isWhite());
 		}
-		return kingsMoves.size() == 0 && k.isCheck();
+		return kingsMoves.size() == 0 && couldCapture;
 	}
 
 	private ArrayList<Position> getPossibleKingMoves(ArrayList<Position> opposingMoves,
@@ -500,6 +506,7 @@ public class Board {
 		for (Position pos : opposingMoves) {
 			if (kingsMoves.contains(pos)) {
 				kingsMoves.remove(pos);
+				couldCapture = true;
 			}
 		}
 		return kingsMoves;

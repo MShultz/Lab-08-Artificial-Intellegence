@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Random;
 
 public class InteractiveHandler {
 	Board board;
@@ -49,31 +50,74 @@ public class InteractiveHandler {
 		if (beganWithNewBoard) {
 			setUpBoard();
 		}
-		if(ui.informOfAIMode() == 1)
+		if (ui.informOfAIMode() == 1)
 			aiMode();
 		else
 			pvp(whiteTurn);
-		
+
 		board.printBoardToConsole();
 	}
-	private void aiMode(){
+
+	private void aiMode() {
 		System.out.println("Initializing AI mode.");
 		int count = 1;
 		boolean isWhite = true;
 		while (!quit && board.isPlayable() && !board.isStalemate() && !board.isCheckmate()) {
 			isWhite = (count % 2 != 0);
-			if(isWhite)
+			if (isWhite)
 				playerMove(isWhite);
-			else{
-				board.printBoardToConsole();
-				Node n = new Node(board, this);
-				process.processMovement(getCompleteMovement(n.getChoice(), isWhite), false);
+			else {
+				System.out.println("AI is thinking...");
+				if (!checkState(false)) {
+					Node n = new Node(board, this);
+					process.processMovement(getCompleteMovement(n.getChoice(), isWhite), false);
+				}
 			}
 			++count;
 			board.setPostMoveChecks();
 		}
 	}
-	private void pvp(int whiteTurn){
+
+	private boolean checkState(boolean isWhite) {
+		boolean checkMove = false;
+		ArrayList<Piece> pieces = board.getAllPossiblePieces(isWhite);
+		King currentPlayerKing = (King) board.getTeamKing(isWhite, board.getBoard());
+		if (pieces.size() == 0 && !currentPlayerKing.isCheck()) {
+			board.setStalemate(true);
+		} else if (pieces.size() == 0 && currentPlayerKing.isCheck()) {
+			board.setCheckmate(true);
+			board.setWinner(!isWhite);
+		}
+		if (currentPlayerKing.isCheck() && !board.isCheckmate() && !board.isStalemate()) {
+			checkMove = true;
+			determineCheckMove();
+		}
+		return checkMove;
+	}
+
+	private void determineCheckMove() {
+		ArrayList<Piece> pieces = board.getAllPossiblePieces(false);
+		ArrayList<Move> possibleMoves = new ArrayList<Move>();
+		for (Piece p : pieces) {
+			possibleMoves.addAll(generateMovement(getAllMovesForPiece(p, true), p));
+		}
+		process.processMovement(getCompleteMovement(getRandomMove(possibleMoves), false), false);
+	}
+
+	private Move getRandomMove(ArrayList<Move> possibleMoves) {
+		Move m = null;
+		int choice = new Random().nextInt(possibleMoves.size() - 1);
+		int count = 0;
+		for (Move move : possibleMoves) {
+			if (count == choice) {
+				m = move;
+			}
+			++count;
+		}
+		return m;
+	}
+
+	private void pvp(int whiteTurn) {
 		int count = 1 + whiteTurn;
 		board.writeBoard();
 		while (!quit && board.isPlayable() && !board.isStalemate() && !board.isCheckmate()) {
@@ -83,11 +127,10 @@ public class InteractiveHandler {
 			board.setPostMoveChecks();
 		}
 	}
-	
-	private void playerMove(boolean isWhite){
+
+	private void playerMove(boolean isWhite) {
 		int piece;
 		boolean pieceChosen = true;
-		
 		ArrayList<Piece> pieces = board.getAllPossiblePieces(isWhite);
 		King currentPlayerKing = (King) board.getTeamKing(isWhite, board.getBoard());
 		if (pieces.size() == 0 && !currentPlayerKing.isCheck()) {
@@ -103,7 +146,7 @@ public class InteractiveHandler {
 				piece = ui.determinePiece(pieces);
 				quit = isQuit(piece);
 				if (!quit) {
-					ArrayList<Move> possibleMoves = generateMovement(getAllMovesForPiece(pieces, piece, isWhite),
+					ArrayList<Move> possibleMoves = generateMovement(getAllMovesForPiece(pieces, piece, isWhite, false),
 							pieces.get(piece - 1));
 					board.printBoardToConsole();
 					int move = ui.determineMove(possibleMoves);
@@ -130,13 +173,13 @@ public class InteractiveHandler {
 		return choice == 0;
 	}
 
-	private ArrayList<Position> getAllMovesForPiece(ArrayList<Piece> pieces, int piece, boolean isWhite) {
+	private ArrayList<Position> getAllMovesForPiece(ArrayList<Piece> pieces, int piece, boolean isWhite, boolean isAI) {
 		Piece current = pieces.get(piece - 1);
 		ArrayList<Position> possibleMoves = current.getMovement(board.getBoard(),
 				(current.getType() == PieceType.PAWN ? false : true));
 		possibleMoves = board.getNonCheckMovements(possibleMoves, current,
 				(King) board.getTeamKing(current.isWhite(), board.getBoard()));
-		if (current.getType() == PieceType.KING || current.getType() == PieceType.ROOK) {
+		if (!isAI && (current.getType() == PieceType.KING || current.getType() == PieceType.ROOK)) {
 			if (board.isValidCastle("O-O-O", isWhite)
 					&& current.getCurrentPosition().equals(board.getRookPosition(isWhite, false)))
 				possibleMoves.add(new Position(-1, -1));
@@ -146,18 +189,18 @@ public class InteractiveHandler {
 		}
 		return possibleMoves;
 	}
-	
-	public ArrayList<Position> getAllMovesForPiece(Piece p) {
+
+	public ArrayList<Position> getAllMovesForPiece(Piece p, boolean isAI) {
 		ArrayList<Position> possibleMoves = p.getMovement(board.getBoard(),
 				(p.getType() == PieceType.PAWN ? false : true));
 		possibleMoves = board.getNonCheckMovements(possibleMoves, p,
 				(King) board.getTeamKing(p.isWhite(), board.getBoard()));
-		if (p.getType() == PieceType.KING || p.getType() == PieceType.ROOK) {
+		if (!isAI && (p.getType() == PieceType.KING || p.getType() == PieceType.ROOK)) {
 			if (board.isValidCastle("O-O-O", p.isWhite())
 					&& p.getCurrentPosition().equals(board.getRookPosition(p.isWhite(), false)))
 				possibleMoves.add(new Position(-1, -1));
 			if (board.isValidCastle("O-O", p.isWhite())
-					&&p.getCurrentPosition().equals(board.getRookPosition(p.isWhite(), true)))
+					&& p.getCurrentPosition().equals(board.getRookPosition(p.isWhite(), true)))
 				possibleMoves.add(new Position(8, 8));
 		}
 		return possibleMoves;
@@ -165,9 +208,9 @@ public class InteractiveHandler {
 
 	private String getCompleteMovement(Move move, boolean isWhite) {
 		String movement;
-		if (move.getTravelPosition().file == -1)
+		if (move.getTravelPosition().getFile() == -1)
 			movement = "O-O-O";
-		else if (move.getTravelPosition().file == 8)
+		else if (move.getTravelPosition().getFile() == 8)
 			movement = "O-O";
 		else {
 			Piece[][] currentBoard = board.getBoard();
@@ -181,21 +224,15 @@ public class InteractiveHandler {
 			movement += Character.toLowerCase(ui.getFileLetter(travelPostition.getFile()));
 			movement += (move.getTravelPosition().getRank() + 1);
 			piece.setCurrentPosition(travelPostition);
-			if (board.isCheck(
-					board.moveSinglePiece(currentPosition, travelPostition, board.copyArray(board.getBoard()), piece),
-					piece, (King) board.getTeamKing(!piece.isWhite(), currentBoard))) {
-				Piece[][] checkBoard = board.moveSinglePiece(currentPosition, travelPostition,
-						board.copyArray(currentBoard), piece);
-				if (board.isCheckmate(!piece.isWhite(), checkBoard, false)) {
-					movement += "#";
-				} else {
-					movement += "+";
-				}
+			if (move.getType() == MoveType.CHECKMATE) {
+				movement += "#";
+			} else if (move.getType() == MoveType.CHECK) {
+				movement += "+";
 			}
 			piece.setCurrentPosition(currentPosition);
 		}
 		System.out.println("---------------------------");
-		System.out.println((isWhite? "White's": "Black's") + " Chosen Move: " + movement);
+		System.out.println((isWhite ? "White's" : "Black's") + " Chosen Move: " + movement);
 		System.out.println("---------------------------");
 		return movement;
 	}
